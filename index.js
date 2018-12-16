@@ -123,6 +123,7 @@ instance.prototype.emptyCurrentState = function() {
 		wsConnected: false,
 		presentationPath: '-',
 		slideIndex: 0,
+		slideGroups: [],
 	};
 
 	// The dynamic variable exposed to Companion
@@ -347,6 +348,18 @@ instance.prototype.actions = function(system) {
 				},
 			]
 		},
+		'slidegroup': {
+			label: 'Trigger Slide by Group',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Group Name',
+					id: 'group_name',
+					tooltip: 'The name of a slide group, like "Verse 1" or "Chorus 1"',
+					regex: self.REGEX_SOMETHING
+				}
+			]
+		},
 		'clearall': { label: 'Clear All' },
 		'clearslide': { label: 'Clear Slide' },
 		'clearprops': { label: 'Clear Props' },
@@ -377,8 +390,8 @@ instance.prototype.actions = function(system) {
 				}
 			]
 		},
-		'stageDisplayHideMessage': { label: 'Stage Display Hide Message' }
-
+		'stageDisplayHideMessage': { label: 'Stage Display Hide Message' },
+		'refreshCurrentPresentation' : { label: 'Refresh Current Presentation Cache' },
 	});
 };
 
@@ -389,6 +402,7 @@ instance.prototype.actions = function(system) {
 instance.prototype.action = function(action) {
 	var self = this;
 	var opt = action.options
+	var cmd = undefined;
 
 	switch (action.action) {
 
@@ -421,7 +435,7 @@ instance.prototype.action = function(action) {
 			}
 
 			var presentationPath = self.currentState.internal.presentationPath;
-			if(opt.path !== undefined && opt.path.match(/^\d+$/) !== null) {
+			if(opt.path.match(/^\d+$/) !== null) {
 				// Is a relative presentation path. Refers to the current playlist, so extract it
 				//  from the current presentationPath and append the opt.path to it.
 				presentationPath = presentationPath.split(':')[0] + ':' + opt.path;
@@ -430,14 +444,17 @@ instance.prototype.action = function(action) {
 				presentationPath = opt.path;
 			}
 
-			cmd = JSON.stringify({
-				action: "presentationTriggerIndex",
-				slideIndex: index,
-				// Pro 6 for Windows requires 'presentationPath' to be set.
-				presentationPath: presentationPath
-			});
+			cmd = self.presentationTriggerIndex(index, presentationPath);
 			break;
 
+		case 'slidegroup':
+			// Trigger the slide based on the group name, if found.
+			var groupIndex = self.currentState.internal.slideGroups[opt.group_name];
+			if(groupIndex !== undefined) {
+				cmd = self.presentationTriggerIndex(groupIndex, self.currentState.internal.presentationPath);
+			}
+			break;
+			
 		case 'clearall':
 			cmd = '{"action":"clearAll"}';
 			break;
@@ -477,6 +494,12 @@ instance.prototype.action = function(action) {
 
 		case 'stageDisplayHideMessage':
 			cmd = '{"action":"stageDisplayHideMessage"}';
+			break;
+
+		case 'refreshCurrentPresentation':
+			cmd = JSON.stringify({
+				action: 'presentationCurrent'
+			});
 			break;
 	};
 
@@ -539,6 +562,7 @@ instance.prototype.onWebSocketMessage = function(message) {
 
 		case 'presentationCurrent':
 			var objPresentation = objData.presentation;
+			self.currentState.internal.slideGroups = [];
 
 			// If playing from the library on Mac, the presentationPath here will be the full
 			//	path to the document on the user's computer ('/Users/JohnDoe/.../filename.pro6'),
@@ -555,12 +579,20 @@ instance.prototype.onWebSocketMessage = function(message) {
 
 			// '.presentationPath' and '.presentation.presentationCurrentLocation' look to be
 			//	the same on Pro6 Mac, but '.presentation.presentationCurrentLocation' is the
-			//	wrong value on Pro6 PC (tested 6.1.6.2). Use '.presentationPath' instead. 
+			//	wrong value on Pro6 PC (tested 6.1.6.2). Use '.presentationPath' instead.
 			self.currentState.internal.presentationPath = objData.presentationPath;
 
 			// Get the total number of slides in this presentation
 			var totalSlides = 0;
 			for(var i=0; i<objPresentation.presentationSlideGroups.length; i++) {
+				var groupName = objPresentation.presentationSlideGroups[i].groupName;
+				
+				if(self.currentState.internal.slideGroups[groupName] === undefined) {
+					// The group may exist in the presentation multiple times. We only use the
+					//  first one we come across, which mimics ProPresenter's hotkey feature.
+					self.currentState.internal.slideGroups[groupName] = totalSlides;
+				}
+
 				totalSlides += objPresentation.presentationSlideGroups[i].groupSlides.length;
 			}
 
@@ -599,6 +631,22 @@ instance.prototype.getProPresenterState = function() {
 	}
 
 };
+
+
+/**
+ * Trigger a new slide by index.
+ */
+instance.prototype.presentationTriggerIndex = function(slideIndex, presentationPath) {
+
+	return JSON.stringify({
+		action: "presentationTriggerIndex",
+		slideIndex: slideIndex,
+		// Pro 6 for Windows requires 'presentationPath' to be set.
+		presentationPath: presentationPath
+	});
+
+};
+
 
 instance_skel.extendedBy(instance);
 exports = module.exports = instance;
