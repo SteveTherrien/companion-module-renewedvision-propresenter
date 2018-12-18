@@ -10,7 +10,7 @@ Next Slide | Advances to the next slide in the current document. If at the end o
 Previous Slide | Moves to the previous slide in the current document. If at the start of a document, will move to the start of the previous document in the playlist.
 Specific Slide | Moves to that presentation/slide number. See the `Specific Slide` section below.
 Trigger Slide by Group | Triggers a slide based on the group name. See the `Trigger Slide by Group` section below.
-Refresh Current Presentation Cache | Refreshes the internal cache of the current presentation. Is done automatically when switching to a different presentation. You should only do manually in certain circumstances. This will also update most of the Dynamic Variables. See the section on `Trigger Slide by Group` for more information.
+Refresh Current Presentation Cache | Refreshes the internal cache of the current presentation. This is done automatically when switching to a different presentation. You should only do this manually in certain circumstances. This will also update most of the Dynamic Variables. See the section on `Trigger Slide by Group` for more information.
 
 ### Specific Slide
 This action has two parameters:
@@ -40,7 +40,7 @@ The below image may make this more clear:
 
 
 ### Trigger Slide by Group
-ProPresenter lets you use hotkeys to trigger a slide group, like binding the `c` key to trigger the `Chorus 1` slide. This module can't do that exactly (use the Octopus Listener module if you really need this), but we can do something similar.
+ProPresenter lets you use hotkeys to trigger slide groups, like binding the `c` key to trigger the `Chorus 1` slide. This module can't do that exactly (use the Octopus Listener module if you really need this), but we can do something similar.
 
 In ProPresenter, group your slides as you normally would, and make notes about the groups' names.
 
@@ -52,7 +52,8 @@ Nothing will happen if the `Group Name` doesn't match anything in the current pr
 
 **Important Notes**  
 
-1. The presentation must be live for the correct group to trigger. For example, if **Song 1** is live, you choose **Song 2** from the playlist (but it's not live yet), and trigger a group like **Chorus**, it will trigger **Song 1**'s chorus. You need to start **Song 2** first. 
+1. The presentation must be live for the correct group to trigger. For example, if **Song 1** is live, you choose **Song 2** from the playlist (but it's not live yet), and trigger the **Chorus** group, it will trigger **Song 1**'s chorus. You need to start **Song 2** first for the groups to trigger in that presentation. This is
+different behavior than how ProPresenter handles hotkeys.
 
 2. If you change a presentation while it's open (such as adding/removing/grouping slides, or changing an arrangement), the internal group names to slide number cache will get out of sync. You can force it to re-sync by switching to a different presentation, or by triggering the `Refresh Current Presentation Cache` action.
 
