@@ -126,17 +126,31 @@ instance.prototype.emptyCurrentState = function() {
 		slideGroups: [],
 	};
 
-	// The dynamic variable exposed to Companion
 	self.currentState.dynamicVariables = {
+		// Will be populated below.
+	};
+
+	// The dynamic variable exposed to Companion.
+	// Update Companion with the default state if each dynamic variable.
+	self.setDynamicVariables({
 		current_slide: 'N/A',
 		total_slides: 'N/A',
 		presentation_name: 'N/A',
 		connection_status: 'Disconnected',
-	};
+	});
 
-	// Update Companion with the default state if each dynamic variable.
-	Object.keys(self.currentState.dynamicVariables).forEach(function(key) {
-		self.updateVariable(key, self.currentState.dynamicVariables[key]);
+};
+
+
+/**
+ * Updates the dynamic variable and internal state for the key/values in the object.
+ */
+instance.prototype.setDynamicVariables = function(objDynamicVariables) {
+	var self = this;
+
+	Object.keys(objDynamicVariables).forEach(function(key) {
+		self.currentState.dynamicVariables[key] = objDynamicVariables[key];
+		self.updateVariable(key, objDynamicVariables[key]);
 	});
 
 };
@@ -603,6 +617,20 @@ instance.prototype.onWebSocketMessage = function(message) {
 
 	if(objData.presentationPath !== undefined && objData.presentationPath !== self.currentState.internal.presentationPath) {
 		// The presentationPath has changed. Update the path and request the information.
+		//
+		// On some installs of ProPresenter, the getProPresenterState() call can take quick a while
+		//  to reply. During this delay our internal state (groups, slide count, name, etc.) are
+		//  no longer accurate and may cause problems (like triggering a slide group by name).
+		//
+		// Reset their states. 
+		self.currentState.internal.slideGroups = {};
+
+		self.setDynamicVariables({
+			current_slide: 'N/A',
+			total_slides: 'N/A',
+			presentation_name: 'N/A',
+		});
+
 		self.getProPresenterState();
 	}
 
