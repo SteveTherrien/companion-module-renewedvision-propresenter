@@ -301,7 +301,7 @@ instance.prototype.connectToProPresenter = function() {
 	});
 
 	self.socket.on('error', function (err) {
-		self.status(self.STATE_ERROR, err.message);
+		self.status(self.STATUS_ERROR, err.message);
 	});
 
 	self.socket.on('connect', function () {
@@ -320,7 +320,7 @@ instance.prototype.connectToProPresenter = function() {
 			return;
 		}
 
-		self.status(self.STATE_ERROR, 'Not connected to ProPresenter');
+		self.status(self.STATUS_ERROR, 'Not connected to ProPresenter');
 		self.setConnectionVariable('Disconnected', true);
 
 	});
@@ -519,17 +519,17 @@ instance.prototype.action = function(action) {
 
 	if (cmd !== undefined) {
 
-		if (self.currentStatus !== self.STATE_ERROR) {
+		if (self.currentStatus !== self.STATUS_ERROR) {
 			try {
 				self.socket.send(cmd);
 			}
 			catch (e) {
 				debug("NETWORK " + e)
-				self.status(self.STATE_ERROR, e);
+				self.status(self.STATUS_ERROR, e);
 			}
 		} else {
 			debug('Socket not connected :(');
-			self.status(self.STATE_ERROR);
+			self.status(self.STATUS_ERROR);
 		}
 	}
 
@@ -546,13 +546,13 @@ instance.prototype.onWebSocketMessage = function(message) {
 	switch(objData.action) {
 		case 'authenticate':
 			if(objData.authenticated === 1) {
-				self.status(self.STATE_OK);
+				self.status(self.STATUS_OK);
 				self.currentState.internal.wsConnected = true;
 				// Successfully authenticated. Request current state.
 				self.setConnectionVariable('Connected', true);
 				self.getProPresenterState();
 			} else {
-				self.status(self.STATE_ERROR);
+				self.status(self.STATUS_ERROR);
 				// Bad password
 				self.log('warn', objData.error);
 				self.disconnectFromProPresenter();
